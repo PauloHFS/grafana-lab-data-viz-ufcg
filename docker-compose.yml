@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana_class_instance
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana-provisioning:/etc/grafana/provisioning
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=strongpassword
+      - GF_DATASOURCE_PASSWORD=password
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: timescale/timescaledb:latest-pg15
+    container_name: postgres_class_instance
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=workshopdb
+    volumes:
+      - ./postgres-data/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres-storage:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  data-injector:
+    build: ./data-injector
+    container_name: data_injector_service
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=workshopdb
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  grafana-storage:
+  postgres-storage:
